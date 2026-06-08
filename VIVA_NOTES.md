@@ -150,6 +150,23 @@ the sidebar reads that variable to highlight the current item.
 rendered all at once. Real-Time = button-triggered SSE, incremental per-record updates,
 no page flash/refresh. ✅
 
+**Q: Does switching panels lose the live stream / analysis state?**
+We use a **hybrid** layout:
+- **Analysis and Export share ONE page (`analytics.jsp`) as in-page JS tabs.** Switching
+  between them is a JavaScript show/hide — **no page reload** — so the SSE stream, the
+  running-average numbers, and the Chart.js graph **keep running** across the switch.
+  (Implementation: `showTab()` toggles `display`; it never closes the `EventSource`.)
+- **Dataset Management is a separate server-rendered page.** Navigating to it *is* a full
+  reload (which is fine — its records simply re-query from the DB, so nothing is lost).
+**Why hybrid?** A full single-page app would also have to rewrite the Dataset CRUD
+(upload/browse/search/paginate/edit/delete) as AJAX — high effort/risk. The hybrid keeps
+the verified server-side Dataset module untouched while solving the real pain point
+(the stream dropping when moving from Analysis to Export).
+One-liner: *"Analysis and Export are JS tabs on one page so the SSE stream survives the
+switch; Dataset stays a separate JSP page since its state lives in the DB and re-queries.
+We deliberately didn't go full single-page to avoid rewriting the working Dataset CRUD as
+AJAX."*
+
 ## 10. Environment trivia
 
 - **Tomcat 10 → `jakarta.servlet.*`** (Jakarta EE 9). Tomcat 9 used `javax.servlet.*`.

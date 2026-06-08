@@ -280,6 +280,30 @@ tbody tr:hover td.actions { background: #eff6ff; }
 .btn-success { background: #16a34a; border-color: #16a34a; }
 .btn-success:hover { background: #15803d; }
 
+/* In-page tab bar (Analytics page: Analysis | Export) */
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 22px;
+    border-bottom: 2px solid var(--border);
+}
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+    color: var(--accent-dark);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+
 .placeholder {
     color: var(--muted);
     font-style: italic;
