@@ -68,6 +68,10 @@ public class WeatherDAO {
     private static final String SOFT_DELETE_SQL =
             "UPDATE weather_data SET is_active = 0 WHERE id = ?";
 
+    // Hard reset of the WHOLE dataset (administrative "Clear Dataset" action).
+    // TRUNCATE empties the table AND resets AUTO_INCREMENT back to 1.
+    private static final String CLEAR_SQL = "TRUNCATE TABLE weather_data";
+
     /**
      * Bulk-inserts records using JDBC BATCHING.
      *
@@ -264,6 +268,21 @@ public class WeatherDAO {
              PreparedStatement ps = conn.prepareStatement(SOFT_DELETE_SQL)) {
             ps.setLong(1, id);
             return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * CLEAR / RESET the entire dataset (hard reset).
+     *   Runs TRUNCATE TABLE, which removes every row and resets the
+     *   auto-increment id back to 1. This is an administrative "start fresh"
+     *   action used before re-importing the CSV, and is deliberately DISTINCT
+     *   from softDelete(): soft-delete hides ONE record but keeps it; this
+     *   wipes the whole table so a re-upload does not create duplicates.
+     */
+    public void clearAll() throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(CLEAR_SQL)) {
+            ps.executeUpdate();
         }
     }
 

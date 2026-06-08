@@ -195,3 +195,113 @@ tbody tr:hover td.actions { background: #eff6ff; }
 @media (max-width: 640px) {
     .edit-form { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   UNIFIED GUI — sidebar navigation shell + analysis panel styles.
+   One master theme shared by every panel (Dataset, Analysis, Export).
+   ===================================================================== */
+
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    background: var(--accent-dark);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+.sidebar .brand {
+    padding: 22px 20px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.sidebar .brand small {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #93c5fd;
+    margin-top: 3px;
+}
+.sidebar nav { display: flex; flex-direction: column; padding: 12px 0; }
+.sidebar nav a {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    border-left: 3px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar nav a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.sidebar nav a.active {
+    background: rgba(255, 255, 255, 0.10);
+    color: #fff;
+    border-left-color: #60a5fa;
+    font-weight: 600;
+}
+.sidebar .sidebar-foot {
+    margin-top: auto;
+    padding: 16px 20px;
+    font-size: 0.72rem;
+    color: #64748b;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Main content area (holds the panels) */
+.main { flex: 1; min-width: 0; padding: 32px 32px 64px; max-width: 1180px; }
+
+/* --- Analysis panel: metric displays + chart + buttons --- */
+.metric-row { display: flex; gap: 36px; flex-wrap: wrap; margin-top: 16px; }
+.metric { display: flex; flex-direction: column; gap: 4px; }
+.metric-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+.metric-value { font-size: 1.9rem; font-weight: 700; color: var(--text); }
+.metric.accent  .metric-value { color: var(--accent); }
+.metric.success .metric-value { color: #16a34a; }
+.metric.warning .metric-value { color: #ea580c; }
+
+.chart-box {
+    margin-top: 22px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.btn-success { background: #16a34a; border-color: #16a34a; }
+.btn-success:hover { background: #15803d; }
+
+.placeholder {
+    color: var(--muted);
+    font-style: italic;
+    padding: 8px 0;
+}
+
+/* "Current dataset: N active records" pill on the Dataset panel */
+.dataset-remark {
+    display: inline-block;
+    margin: 8px 0 0;
+    background: #eff6ff;
+    color: var(--accent-dark);
+    border: 1px solid #bfdbfe;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; flex-direction: column; }
+    .sidebar nav { flex-direction: row; flex-wrap: wrap; }
+    .main { padding: 20px; }
+}
