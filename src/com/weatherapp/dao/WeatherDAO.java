@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.weatherapp.db.DBConnection;
 import com.weatherapp.model.WeatherRecord;
+import com.weatherapp.model.TemperatureReport;
 
 /**
  * WeatherDAO — Data Access Object for the weather_data table.
@@ -71,6 +72,15 @@ public class WeatherDAO {
     // Hard reset of the WHOLE dataset (administrative "Clear Dataset" action).
     // TRUNCATE empties the table AND resets AUTO_INCREMENT back to 1.
     private static final String CLEAR_SQL = "TRUNCATE TABLE weather_data";
+
+    // Batch summary statistics for the export report (avg/max + count as context).
+    private static final String STATS_SQL =
+            "SELECT AVG(temperature_c) AS avg_t, MAX(temperature_c) AS max_t, " +
+            "COUNT(*) AS cnt FROM weather_data WHERE is_active = 1";
+
+    // First-100 sample (same as the live stream) for running-average milestones.
+    private static final String MILESTONE_SAMPLE_SQL =
+            "SELECT temperature_c FROM weather_data WHERE is_active = 1 ORDER BY id ASC LIMIT 100";
 
     /**
      * Bulk-inserts records using JDBC BATCHING.
@@ -284,6 +294,55 @@ public class WeatherDAO {
              PreparedStatement ps = conn.prepareStatement(CLEAR_SQL)) {
             ps.executeUpdate();
         }
+    }
+
+    /**
+     * Assembles the full temperature analysis report for the Export module:
+     *   - batch summary (average, maximum + count as context) in one aggregate query;
+     *   - real-time running-average milestones (running avg after 25/50/75/100
+     *     of the first 100 records — the same sample the live SSE stream uses).
+     * Member 3's ExportServlet turns this object into CSV or JSON.
+     */
+    public TemperatureReport getTemperatureReport() throws SQLException {
+        TemperatureReport report = new TemperatureReport();
+        try (Connection conn = DBConnection.getConnection()) {
+
+            // 1) Batch summary stats.
+            try (PreparedStatement ps = conn.prepareStatement(STATS_SQL);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    report.setAverage(rs.getDouble("avg_t"));
+                    report.setMaximum(rs.getDouble("max_t"));
+                    report.setCount(rs.getLong("cnt"));
+                }
+            }
+
+            // 2) Running-average milestones over the first 100 active records.
+            int[] targets = {25, 50, 75, 100};
+            int[] mc = new int[targets.length];
+            double[] ma = new double[targets.length];
+            int found = 0;
+            try (PreparedStatement ps = conn.prepareStatement(MILESTONE_SAMPLE_SQL);
+                 ResultSet rs = ps.executeQuery()) {
+                double sum = 0;
+                int n = 0;
+                while (rs.next()) {
+                    sum += rs.getDouble("temperature_c");
+                    n++;
+                    for (int t : targets) {
+                        if (n == t) {           // hit a milestone -> snapshot the running avg
+                            mc[found] = n;
+                            ma[found] = sum / n;
+                            found++;
+                        }
+                    }
+                }
+            }
+            // Trim to milestones actually reached (dataset may have < 100 rows).
+            report.setMilestoneCounts(java.util.Arrays.copyOf(mc, found));
+            report.setMilestoneAverages(java.util.Arrays.copyOf(ma, found));
+        }
+        return report;
     }
 
     /** Builds the LIKE pattern. Blank query -> "%" which matches every row. */

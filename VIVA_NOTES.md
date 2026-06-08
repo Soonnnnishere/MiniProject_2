@@ -85,6 +85,26 @@ re-upload doesn't create duplicates). The UI asks for confirmation first.
 table-level reset; `TRUNCATE` is the correct tool to truly empty the dataset.
 Two distinct, intentional behaviours.
 
+**Q: If I edit or soft-delete a record, then re-upload the same CSV, does my change
+stay / does the data come back?**
+Your change stays on its row (every CRUD op is keyed on the primary `id`), **but
+re-uploading also re-inserts the file's original data as brand-new rows** — the upload
+is a blind bulk `INSERT` with no link to existing rows. So:
+- **Soft-deleted** row stays hidden (`is_active=0`); a fresh **active** duplicate is
+  added → the data "reappears" as a *new* row (the delete was not undone — a new copy
+  was created).
+- **Edited** row keeps your edited values; a fresh duplicate with the **original** CSV
+  values is added alongside it.
+Either way you get **duplicates**, and the file's original values come back.
+**Mental model:** your edits/deletes live in the *database*, but the *CSV file* still
+holds the original data — re-uploading pours it back in as new rows; it does **not**
+sync or merge. **Fix:** click **Clear Dataset** (`TRUNCATE`) before re-importing for a
+clean single copy.
+One-liner: *"CRUD ops are keyed on the primary key so they persist, but re-import is an
+unconditional bulk insert of the file's original rows, so it neither respects nor undoes
+prior edits/soft-deletes — it just adds duplicates; we Clear (TRUNCATE) first to
+re-import cleanly."*
+
 ## 7. Analysis module (Batch & Real-Time)
 
 **Q: How does Batch analysis work?** `GET /TemperatureServlet?mode=batch`. One SQL
