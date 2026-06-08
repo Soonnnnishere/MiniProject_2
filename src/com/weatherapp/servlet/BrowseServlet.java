@@ -58,6 +58,11 @@ public class BrowseServlet extends HttpServlet {
                 totalPages = 1;
             }
 
+            // Total active records in the WHOLE dataset (ignores the search filter)
+            // -> shown as the "current dataset size" remark. Reuse totalCount when
+            // there is no search to avoid an extra query.
+            int datasetSize = search.isEmpty() ? totalCount : dao.count("");
+
             // --- hand the data to the JSP via request attributes ---
             // (setAttribute = "put this object where the JSP can read it")
             request.setAttribute("records", records);
@@ -65,6 +70,7 @@ public class BrowseServlet extends HttpServlet {
             request.setAttribute("page", page);
             request.setAttribute("totalPages", totalPages);
             request.setAttribute("totalCount", totalCount);
+            request.setAttribute("datasetSize", datasetSize);          // whole-dataset remark
             request.setAttribute("msg", request.getParameter("msg"));  // success banner text
 
             // forward = server-side hand-off to the JSP (URL stays /browse).
