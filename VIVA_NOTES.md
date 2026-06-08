@@ -184,3 +184,34 @@ AJAX."*
 - `formatted_date` stored as text (the analysis is temperature-focused, not time-series).
 - The real-time stream is capped (LIMIT 100) for demo speed, so its running average
   covers the streamed subset, not all 96k (that's the batch view).
+
+## 12. Deployment over a real network (no-localhost rule)
+
+**Q: How do you deploy/demo over a real IP (no `localhost`)?**
+Tomcat runs on the demo machine and listens on port 8080 on ALL network interfaces — its
+`<Connector port="8080">` has no bind address, so it binds `0.0.0.0` (just like a
+`new ServerSocket(8080)` with no address specified). So the app is automatically reachable
+at the machine's LAN IP, e.g. **`http://192.168.1.12:8080/MiniProject2/`**. Find the IP
+with `ipconfig getifaddr en0` and use that URL instead of `localhost`. The server machine
+and the client device must be on the **same Wi-Fi / subnet**.
+
+**Q: Do you change `DBConnection.java` for the real-IP demo?**
+**NO.** It stays `jdbc:mysql://localhost:3306/weatherdb`, because the Servlet and MySQL run
+on the **same machine** — the servlet connects to MySQL locally. The "no localhost" rule is
+about the **browser URL** (how a client reaches Tomcat over the network), NOT the internal
+DB connection. (You'd only change it if MySQL were on a different host.)
+
+**Q: Does the frontend need changing?**
+No. The JS uses **relative URLs** (`fetch("TemperatureServlet?...")`, `new EventSource("...")`),
+which resolve against whatever host loaded the page — so they work over any IP automatically.
+
+**Q: How does this relate to Mini Project 1?**
+Same TCP/IP networking: a client connects to the server's LAN IP on a port, both on the
+same subnet. The only difference is the server is **Tomcat (HTTP, port 8080)** and the
+client is a **browser**, instead of a custom `ServerSocket` and socket client. We configure
+no IP in code — Tomcat already listens on every interface; we just read the Mac's IP.
+
+**Deployment checklist:** (1) Tomcat running; (2) it auto-listens on `*:8080`; (3) read the
+Mac's IP (don't set it); (4) client on the same Wi-Fi/subnet; (5) firewall allows 8080.
+**Gotcha:** campus/public Wi-Fi often blocks device-to-device traffic (AP isolation) — use a
+phone hotspot/own router if needed; and the IP can change (DHCP), so re-check on demo day.
