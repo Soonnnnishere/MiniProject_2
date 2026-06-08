@@ -47,3 +47,14 @@ CREATE TABLE weather_data (
   -- Index on is_active: every read filters by it, so indexing speeds them up.
   INDEX idx_is_active (is_active)
 );
+
+-- ----------------------------------------------------------------------------
+-- export_log (Member 3 / Reporting) — audit trail of every report download.
+-- IF NOT EXISTS + no DROP, so it survives re-running this script.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS export_log (
+  id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+  report_type VARCHAR(100),                              -- what was exported
+  format      VARCHAR(10),                               -- "CSV" or "JSON"
+  exported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP        -- when (precise timestamp)
+);

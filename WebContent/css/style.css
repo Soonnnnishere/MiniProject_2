@@ -286,6 +286,27 @@ tbody tr:hover td.actions { background: #eff6ff; }
     padding: 8px 0;
 }
 
+/* Export panel: HTML report preview box + preview tables */
+.preview-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 0.9rem;
+}
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+.preview-table th, .preview-table td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+}
+.preview-table th { background: #f1f5f9; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); font-size: 0.85rem; }
+
 /* "Current dataset: N active records" pill on the Dataset panel */
 .dataset-remark {
     display: inline-block;
