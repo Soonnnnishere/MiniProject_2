@@ -23,6 +23,18 @@ Browser → `GET /browse` → `BrowseServlet` reads params → calls `dao.search
 puts results on the request (`setAttribute`) → forwards to `index.jsp` → JSP
 renders the HTML table.
 
+**Q: So servlets process the data and JSP is what we view — is that right?**
+Right idea, refined into the three MVC roles:
+- **Servlet = Controller** — receives the HTTP request, **coordinates** the logic, and picks
+  the response. It does **not** run the SQL itself — it **delegates** to the DAO.
+- **DAO = Model / data layer** — the only part that **actually runs the SQL** (the "database
+  worker").
+- **JSP = View** — **only displays** what the servlet hands it; it does **no** data processing.
+Analogy: **JSP** = the plate you see · **Servlet** = the waiter (takes the order, coordinates) ·
+**DAO** = the kitchen/chef (does the real work). The waiter doesn't cook (no SQL) — he passes
+the order to the kitchen (DAO) and brings the plate (data) to the table (JSP).
+One-liner: *"Servlet = control/coordination, DAO = the actual database work, JSP = the display."*
+
 ## 2. JDBC
 
 **Q: What is JDBC?** Java Database Connectivity — the standard Java API to run SQL.
@@ -50,7 +62,22 @@ single multi-row INSERT — one network round-trip instead of thousands. ~3 seco
 total.
 **Q: Why flush every 1000 instead of all at once?** Keeps memory bounded.
 **Q: How is the file received?** `@MultipartConfig` + `request.getPart("csvFile")`,
-read line by line with a `BufferedReader` (streamed, not loaded whole).
+read line by line with a `BufferedReader` (streamed, not loaded whole). Note: the **user**
+chooses the file in the browser; the **`BufferedReader` reads** it on the server (it doesn't
+"choose" it).
+
+**Q: Walk through the full upload flow (file → screen).**
+1. **Browser** — user picks the CSV in the file picker → POSTs it as `multipart/form-data` to `/upload`.
+2. **Tomcat** — buffers the file in a **temp dir** (not visible; deleted after the request).
+3. **`UploadServlet.doPost`** — `getPart("csvFile")` → reads it line-by-line with a `BufferedReader`
+   → `parseLine()` validates/cleans each row → `dao.batchInsert()` `INSERT`s into MySQL → builds the
+   import-status message → **`response.sendRedirect("/browse?msg=…")`** ← the "jump".
+4. **Browser** follows the redirect → a new `GET /browse`.
+5. **`BrowseServlet`** re-queries the DB (`search` + `count`) → forwards to `index.jsp`.
+6. **`index.jsp`** displays **page 1 (20 rows)** + the import banner + pagination + dataset count.
+**Two clarifications:** it shows **one page** (paginated), not all 96k rows at once; and the data
+on screen comes **fresh from the database** (via `BrowseServlet`), not from the uploaded file.
+**Why redirect (Post-Redirect-Get):** so a browser **refresh won't re-submit** the upload.
 **Q: Malformed rows?** `parseLine` returns `null`; we count and skip them so one
 bad row doesn't abort the whole import.
 **Q: NULL handling?** "Precip Type" can be the text "null" → stored as SQL `NULL`
@@ -352,6 +379,18 @@ compiles it, then runs it** (and caches the class) — so a JSP *is* a servlet u
 types: `<%@ %>` directive, `<%! %>` declaration, `<% %>` scriptlet, `<%= %>` expression.
 Implicit objects we use: `request`, `response`, `out`, `pageContext` — and `page` (which is why
 naming a variable `page` is a compile error → we used `pageNum`).
+
+**Q: Why use JSP instead of a plain HTML file?** Because our pages are **dynamic**, and plain
+HTML is **static (fixed)**. A `.html` file shows the *same* content to everyone, every time — it
+can't query the database or react to input. A **JSP = HTML + server-side Java**: when requested,
+Tomcat **runs the Java and produces fresh HTML**, so it can:
+- **loop over DB records** (the records table — different rows each upload/search),
+- **pre-fill the edit form** with one specific record's values (`value="<%= r.getTemperatureC() %>"`),
+- show **conditional content** (the "No records" empty state, Prev/Next pagination, the green
+  import-status banner) — all decided at request time from the data.
+None of that is possible with a frozen `.html` file. (Our purely static asset — `style.css` — *is*
+a plain file, because styling doesn't change per request.) **Rule: static content → plain files;
+data-driven content → JSP.**
 
 **Q: What is a JavaBean / POJO?** A plain class with private fields, public getters/setters, and
 a no-arg constructor (e.g. `WeatherRecord`). It carries one DB row around the app cleanly.

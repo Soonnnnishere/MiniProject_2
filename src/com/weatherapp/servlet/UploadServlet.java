@@ -51,7 +51,7 @@ public class UploadServlet extends HttpServlet {
         try {
             // getPart("csvFile") grabs the uploaded file. "csvFile" must match
             // the <input type="file" name="csvFile"> in index.jsp.
-            Part filePart = request.getPart("csvFile");
+            Part filePart = request.getPart("csvFile"); //grab the uploaded file 
             if (filePart == null || filePart.getSize() == 0) {
                 // No file chosen -> return HTTP 400 Bad Request (web.xml maps it
                 // to a friendly page; the user never sees a raw error).
@@ -65,7 +65,7 @@ public class UploadServlet extends HttpServlet {
 
             // Read the uploaded file as text, one line at a time. BufferedReader
             // is memory-friendly: we stream the file rather than loading it whole.
-            try (BufferedReader reader = new BufferedReader(
+            try (BufferedReader reader = new BufferedReader( //read line by line 
                     new InputStreamReader(filePart.getInputStream(), StandardCharsets.UTF_8))) {
 
                 String line;
@@ -78,7 +78,7 @@ public class UploadServlet extends HttpServlet {
                     if (line.trim().isEmpty()) {
                         continue;            // skip blank lines
                     }
-                    WeatherRecord rec = parseLine(line);
+                    WeatherRecord rec = parseLine(line); //validate each row
                     if (rec == null) {
                         skipped++;           // malformed row -> count and skip
                     } else {
@@ -88,7 +88,7 @@ public class UploadServlet extends HttpServlet {
             }
 
             // One DAO call inserts all parsed rows using JDBC batching.
-            int inserted = dao.batchInsert(records);
+            int inserted = dao.batchInsert(records); //Insert row into MYSQL
             int total = inserted + skipped;   // valid + invalid DATA rows read (header excluded)
 
             // IMPORT STATUS banner — shown to the user as proof of validation/preprocessing:
@@ -100,7 +100,7 @@ public class UploadServlet extends HttpServlet {
                        + "  |  Inserted (valid): " + String.format("%,d", inserted)
                        + "  |  Skipped (invalid/malformed): " + String.format("%,d", skipped);
             response.sendRedirect(request.getContextPath() + "/browse?msg="
-                    + URLEncoder.encode(msg, StandardCharsets.UTF_8));
+                    + URLEncoder.encode(msg, StandardCharsets.UTF_8)); // jump part
 
         } catch (Exception e) {
             // Any unexpected failure -> HTTP 500, never a raw stack trace to the user.
