@@ -56,6 +56,24 @@ bad row doesn't abort the whole import.
 **Q: NULL handling?** "Precip Type" can be the text "null" → stored as SQL `NULL`
 via `ps.setNull(i, Types.VARCHAR)`.
 
+**Q: Where is the uploaded CSV stored?** The CSV **file** is NOT kept — Tomcat holds it in a
+temp directory only *during* the request; we stream-parse it and `INSERT` the rows into MySQL,
+then the temp file is discarded. The **data** lives permanently in the **`weather_data` table**
+(MySQL's data files on disk, e.g. `/usr/local/mysql/data/weatherdb/`). **One table** holds every
+uploaded row — there are no per-upload files.
+
+**Q: Each upload adds rows — isn't that duplication?** Only if you re-upload the **same** data.
+Uploading genuinely *new* rows (e.g. the two half-files `…2006-2010` + `…2011-2016` = the full
+set) legitimately **appends**. Re-uploading the same file **duplicates** (plain bulk insert, no
+upsert; the primary key only enforces unique *IDs*, not unique *content*, and the data has no
+natural unique key). Fix: **Clear-Dataset** (`TRUNCATE`) before re-importing the same dataset.
+
+**Q: MySQL Workbench only shows 1000 rows — is the table only 1000 rows?** No. Workbench's
+toolbar has a **"Limit to 1000 rows"** safety cap, so `SELECT *` is run as `… LIMIT 1000` (to
+avoid painting 100k+ rows into the grid). The table really holds all the rows — confirm with
+`SELECT COUNT(*) FROM weather_data;` (a count is NOT limited), which matches the app's
+"Current dataset: N" number. To display more, switch the dropdown to **"Don't Limit"**.
+
 ## 4. Soft delete (mandatory feature)
 
 **Q: What is soft delete and how did you implement it?**
@@ -291,6 +309,25 @@ rejects invalid rows before persistence.
 **Q: What is Tomcat?** A **servlet container** (web server). It listens for HTTP on a port,
 manages the servlet lifecycle and threads, **compiles JSPs**, and routes each request to the
 right servlet via the `@WebServlet` / `web.xml` mappings.
+
+**Q: 8080 vs 3306 — same thing? do you change one to the other?** No — **two different ports
+for two different services**, running at the same time:
+- **8080 = Tomcat** (the web server) — the **browser** connects here to view the app.
+- **3306 = MySQL** (the database) — the **servlet** connects here internally for data.
+You don't swap them: `DBConnection.java` keeps `localhost:3306` (DB) while Tomcat
+independently serves the app on `8080` (web). They're different layers that coexist.
+
+**Q: How is Tomcat different from the MP1 socket server — who picks the port?**
+In **MP1** we **wrote** the server ourselves (`new ServerSocket(5000)`), **chose the port in
+code**, accepted connections with `accept()`, and parsed our own protocol on the streams.
+In **MP2, Tomcat IS the server** (pre-built): it already **listens on `8080` by default** (set
+in Tomcat's `server.xml`, **not our code**), accepts connections, parses **HTTP** for us,
+manages threads + the servlet lifecycle, compiles JSPs, and routes each request to the right
+servlet via `@WebServlet`/`web.xml`. **We write only the servlets** and deploy them — we never
+write socket/port code. (You *could* change the port in `server.xml`, but 8080 is the default.)
+One-liner: *"MP1 = we built the server and chose the port; MP2 = Tomcat is the server, listens
+on 8080 by default and speaks HTTP, and we just write the servlets it calls — MySQL on 3306 is
+a separate internal connection, not the web port."*
 
 **Q: Servlet lifecycle?** Tomcat controls it: **`init()`** runs once when the servlet is
 first loaded → **`service()`** runs on every request and dispatches to **`doGet()` / `doPost()`**
