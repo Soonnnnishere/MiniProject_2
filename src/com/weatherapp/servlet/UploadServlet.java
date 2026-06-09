@@ -89,11 +89,16 @@ public class UploadServlet extends HttpServlet {
 
             // One DAO call inserts all parsed rows using JDBC batching.
             int inserted = dao.batchInsert(records);
+            int total = inserted + skipped;   // valid + invalid DATA rows read (header excluded)
 
-            // POST-REDIRECT-GET pattern: after a successful POST we redirect to
-            // /browse (a GET). This stops a browser refresh from re-submitting
-            // the upload. The count is passed back as a URL-encoded message.
-            String msg = "Inserted " + inserted + " rows (" + skipped + " skipped)";
+            // IMPORT STATUS banner — shown to the user as proof of validation/preprocessing:
+            //   Total read     = data rows seen in the file
+            //   Inserted       = valid rows that passed validation and were persisted
+            //   Skipped        = invalid/malformed rows that parseLine() rejected BEFORE saving
+            // (POST-REDIRECT-GET: redirect to /browse so a refresh won't re-submit the upload.)
+            String msg = "Import complete  |  Total read: " + String.format("%,d", total)
+                       + "  |  Inserted (valid): " + String.format("%,d", inserted)
+                       + "  |  Skipped (invalid/malformed): " + String.format("%,d", skipped);
             response.sendRedirect(request.getContextPath() + "/browse?msg="
                     + URLEncoder.encode(msg, StandardCharsets.UTF_8));
 
