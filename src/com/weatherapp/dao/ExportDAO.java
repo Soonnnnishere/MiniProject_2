@@ -52,7 +52,11 @@ public class ExportDAO {
                             String.valueOf(rs.getLong("id")),
                             rs.getString("report_type"),
                             rs.getString("format"),
-                            String.valueOf(rs.getTimestamp("exported_at"))
+                            // Read as a String (NOT getTimestamp) so the value is shown EXACTLY
+                            // as stored in MySQL — no JDBC timezone conversion (serverTimezone=UTC
+                            // + getTimestamp would shift it by the JVM's offset, e.g. +8h) and no
+                            // trailing ".0". The audit log just displays the stored time verbatim.
+                            rs.getString("exported_at")
                     });
                 }
             }
